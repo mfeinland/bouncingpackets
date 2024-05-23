@@ -7,12 +7,14 @@
 # Author: Max Feinland for Blum Research Group, LASP
 
 # Housekeeping
-import sys
 import os.path
+import sys
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
 import sampex
+module_directory = 'C:/Users/maxim/IRBEM-main/python/IRBEM' # change this to wherever you downloaded bouncingpacketfunctions
+sys.path.append(module_directory)
 from bouncingpacketfunctions import *
 
 print("Welcome to the ChorusWaves search script.", flush=True)
