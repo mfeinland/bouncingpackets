@@ -2,7 +2,7 @@
 
 % Date Created: 5/15/23 (Original Script)
 % Date Created: 6/09/23 (This Script)
-% Last Modified: 6/29/23
+% Last Modified: 9/2/24
 
 % Author: Max Feinland for Blum Research Group, LASP
 
@@ -16,7 +16,6 @@
 clc
 close all
 clear
-
 
 % desired epoch to look at (user defined)
 first_day = input('Enter a start date (formatted as YYYY-MM-DD): ', 's');
@@ -75,16 +74,6 @@ try
         num_bursts = 0; % no bursts
         out_dts = [];
         out_dats = [];
-    elseif first_day_d >= datetime('2005-01-01') && first_day_d <= datetime('2005-01-09')...
-            || last_day_d >= datetime('2005-01-01') && last_day_d <= datetime('2005-01-09')
-   
-            fprintf(['Error: time range includes data that does not exist in the SAMPEX ' ...
-                'ephemeris repository. Please try a new input.\n'])
-            % do not plot or print anything
-        dates_ok = 0; % dates not valid
-        num_bursts = 0; % no bursts
-        out_dts = [];
-        out_dats = [];
     end
 catch % nonreal dates
     fprintf(['Error: non-real date. This can happen if a specified date does not exist' ...
@@ -111,10 +100,17 @@ if y == 1996 && doy1 < 220 || y < 1996 || y > 2013 || y == 2013 && doy1 > 312
     % if the data is outside the time range that the data spans
     disp(['Invalid command; please choose dates between August 7th, 1996 ' ...
         'and November 8th, 2013.'])
+    num_bursts = 0; out_dts = []; out_dats = [];
+    return;
 elseif y ~= y2
     disp('Invalid command; please choose two dates in the same year.')
-elseif y == 2011 && sum(ismember([doy1 doy2], 297:323)) > 0
+    num_bursts = 0; out_dts = []; out_dats = [];
+    return; 
+elseif y == 2011 && sum(ismember([doy1 doy2], 297:323)) > 0 || ...
+       y == 2005 && sum(ismember([doy1 doy2], 1:9)) > 0
      disp('Request contains data outside ephemeris range. Please try again.')
+     num_bursts = 0; out_dts = []; out_dats = [];
+     return;
 else
     fprintf('Working...\n') % status update for user
 
@@ -295,7 +291,6 @@ else
                 used_maglats = [];
                 used_p_expect = [];
                 used_geocoords = [];
-                % used_maxr = [];
                 used_bfield = [];
 
                 for j = 1:length(st)
@@ -313,8 +308,6 @@ else
 
                     mdl = mean(diff(pksi(ns)/50)); % mean bounce period
 
-                    % maxr = max(r(st(j):et(j)));
-
                     % calculate expected period
                     p_expect = expectedPeriod(lshell(n_time(j)), maglat(n_time(j)));
              
@@ -322,15 +315,13 @@ else
                     unqvals = unique(r(round(st(j)):round(et(j)))); % unique numbers in interval
 
                     % (second condition exists since sometimes the data
-                    % gets "corrupted", probably from SEUs, and only shows
-                    % a few possible values)
+                    % only shows a few possible values)
 
                     % to be printed, all these conditions must be true:
-                    % short, not corrupted, and low l-shell
+                    % short, good resolution, and low l-shell
 
-                    % conds = [length_int < 750, length(unqvals) > 10, ...
-                    %      lshell(n_time(j)) <= 3];
-                    conds = [length_int < 750, lshell(n_time(j)) <= 3];
+                    conds = [length_int < 750, length(unqvals) > 10, ...
+                         lshell(n_time(j)) <= 3];
         
                     if all(conds) % if they are indeed all met
                         fprintf('[Event %i] %s %.3f (%.3f, %.3f, %.3f) %.4f %.4f %.4f\n', ...
@@ -341,14 +332,13 @@ else
                         num = num + 1; % increment number of bursts found
                         yesPlot(j) = 1; % include this interval in output
                         used_dts(j) = d(st(j));
-                        used_mdl(end+1) = mdl;
-                        used_lshells(end+1) = lshell(n_time(j));
-                        used_mlt(end+1) = mlt(n_time(j));
-                        used_maglats(end+1) = maglat(n_time(j));
-                        used_p_expect(end+1) = p_expect;
-                        used_geocoords(end+1,:) = [lat(n_time(j)) long(n_time(j)) alt(n_time(j))];
-                        % used_maxr(end+1) = maxr;
-                        used_bfield(end+1) = bfield(n_time(j));
+                        used_mdl(end+1) = mdl; %#ok<AGROW>
+                        used_lshells(end+1) = lshell(n_time(j));%#ok<AGROW>
+                        used_mlt(end+1) = mlt(n_time(j));%#ok<AGROW>
+                        used_maglats(end+1) = maglat(n_time(j));%#ok<AGROW>
+                        used_p_expect(end+1) = p_expect;%#ok<AGROW>
+                        used_geocoords(end+1,:) = [lat(n_time(j)) long(n_time(j)) alt(n_time(j))];%#ok<AGROW>
+                        used_bfield(end+1) = bfield(n_time(j));%#ok<AGROW>
 
                     end
                     plotting_data = [used_mdl' used_p_expect' used_geocoords ...
@@ -789,9 +779,6 @@ while currentYear < endYear || (currentYear == endYear && currentDay <= endDay)
     end
 end
 daysvec = [daysArray' yearsArray'];
-
-
-
 end
 
 
@@ -810,8 +797,7 @@ function p_expect = expectedPeriod(L, maglat)
 % Author: Max Feinland for Blum Research Group
 
 % Inputs: L-shell, magnetic latitude, mirror latitude
-% Outputs: expected period, maximum periods, minimum periods
-
+% Outputs: expected period
 
 c = 3e+8; % m/s
 a = 6371000; % m, radius of Earth
@@ -821,8 +807,6 @@ E = 1.6021766e-13; % 1 MeV in J
 total_E = E + E_rest; % J
 v = c*sqrt(1-(m_e*c^2/total_E)^2); % electron velocity, m/s
 
-% m = 90 - abs(mirrors);
-% m = abs(mirrors);
 m = abs(maglat);
 
 y = (1 + 3*cosd(m).^2).^(-1/4).*sind(m).^3;
@@ -831,57 +815,5 @@ T_1 = sqrt(2)*pi/6;
 T = T_0 - 0.5*(T_0 - T_1)*(y + sqrt(y));
 
 p_expect =  4*T*L*a/v;
-
-end
-
-%% plotPeriodvsLshell
-function plotPeriodvsLshell(numeric_data) %#ok<DEFNU>
-
-% Author: Max Feinland for Blum Research Group
-% Date created: 6/4/23
-% Last modified: 6/6/23
-
-per = numeric_data(:,1);
-L = numeric_data(:,2);
-maglat = numeric_data(:,4);
-
-c = 3e+8; % m/s
-a = 6371000; % m, radius of Earth
-m_e = 9.11e-31; % electron mass, kg
-E_rest = m_e*c^2; % MeV
-E = 1.6021766e-13; % 1 MeV in J
-total_E = E + E_rest; % J
-v_e = c*sqrt(1-(m_e*c^2/total_E)^2); % electron velocity, m/s
-
-y = (1 + 3*cosd(maglat).^2).^(-1/4).*sind(maglat).^3;
-T_0 = 1 + (1/(2*sqrt(3)))*log(2+sqrt(3));
-T_1 = sqrt(2)*pi/6;
-T = T_0 - 0.5*(T_0 - T_1)*(y + sqrt(y));
-per_pred = 4*T.*L*a/v_e;
-
-% plotting
-figure()
-errorbar(L, per, 0.02*ones(size(per)), 'r.', 'DisplayName', 'Observed Period', 'MarkerSize', 15)
-xlim([min(L)-1 max(L)+1]), ylim([min(per)-0.1 max(per)+0.1])
-hold on
-plot(L, per_pred, 'bs', 'DisplayName', 'Predicted Period', 'MarkerSize', 10)
-plot(L, per_pred/2, 'gs', 'DisplayName', 'Predicted Period (Half)', 'MarkerSize', 10)
-
-x1 = [L L];
-y1 = [per per_pred];
-plot(x1', y1', 'k-', 'HandleVisibility', 'off') % plots line from pred to actual
-
-lvec = linspace(0, 8, 50);
-expect_pers_low = 4*T_1*lvec*a/v_e;
-expect_pers_high = 4*T_0*lvec*a/v_e;
-plot(lvec, expect_pers_low, 'k-', 'DisplayName', 'Possible Period (Low)')
-plot(lvec, expect_pers_high, 'm-', 'DisplayName', 'Possible Period (High)')
-plot(lvec, expect_pers_low/2, 'k--', 'DisplayName', 'Possible Period (Low, Half)')
-plot(lvec, expect_pers_high/2, 'm--', 'DisplayName', 'Possible Period (High, Half)')
-
-grid minor
-xlabel('L-shell'), ylabel('Period (s)')
-title('Predicted period from L-shell')
-legend('Location', 'northwest')
 
 end
