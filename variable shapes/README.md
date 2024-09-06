@@ -13,4 +13,4 @@
 - `bouncingpacketfunctions.py` has the functions (O'Brien algorithm, authored algorithm) necessary to search the SAMPEX data for bouncing packets.
 - `findbouncingpackets.py` is the driver script that lets you query dates to search.
 - `make_plots` has 4 functions to generate the 4 figures in the manuscript.
-- `model_preds_and_spacings.csv` has model predictions and exact spacings of each "good" microburst, used to generate Figure 3 in the manuscript .
+- `model_preds_and_spacings.csv` has model predictions and exact spacings between peaks of each "good" microburst, used to generate Figure 3 in the manuscript .
