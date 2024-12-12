@@ -1,5 +1,5 @@
 '''
-Example event plots
+Figure 1: Example event plots
 '''
 
 import matplotlib.pyplot as plt
@@ -14,8 +14,6 @@ plt.rcParams["font.family"] = "Arial" # bc I don't like the default Python font
 def plot_date(ax, j):
     # Function that makes plots of events
     # Author: Max Feinland
-    # Date created: not sure, sorry
-    # Last modified: 7/23/2024
     
     # Inputs: axes object (which subplot to plot on), iterator variable, 
     # dictionary containing specifics for each plot
@@ -66,12 +64,10 @@ def plot_date(ax, j):
     ax.set_ylim((min(r_plot)-0.1*np.ptp(r_plot)), (1.1*np.ptp(r_plot)+min(r_plot)))
     
 # read in data
-data = pd.read_csv("Data_Files/all_events_v3.csv", index_col=0)
-good_data = data[data.final_eye<2] # restrict to good events only
-good_data = good_data.reset_index(drop=True)
+data = pd.read_csv("Data_Files/good_events.csv", index_col=0)
 
 idx =  [15, 33, 43, 25, 12, 64] # indices of events I picked as examples
-plotting_data = {"t": [good_data.t[x] for x in idx], 
+plotting_data = {"t": [data.t[x] for x in idx], 
                  "letter": ['a) - decreasing', 'b) - half', 'c) - crown', 'd) - crown',
                             'e) - other', 'f) - other']}
 
@@ -82,155 +78,21 @@ ax_flat = ax.flatten()
 for j, a in enumerate(ax_flat):
     plot_date(a, j)
 
-plt.savefig('Figures/examples.png')
-
+# plt.savefig('Figures/examples.png')
 
 '''
-Polar plot of MLT, L-shell
+Figure 2: Period vs. L-shell
 '''
 
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-import matplotlib.dates as dates
 from matplotlib.legend_handler import HandlerTuple
 import ast
-from datetime import datetime
-from matplotlib.patches import Circle
 
 
-plt.rcParams["font.family"] = "Arial"
-
-# Import data
-data = pd.read_csv("Data_Files/all_events_v3.csv", index_col=0)
-good_data = data[data.final_eye<2] # restrict to good events
-good_data = good_data.reset_index(drop=True) # reset index
-
-# spread in model predictions
-pers = pd.read_csv("Data_Files/model_pers_2.csv",index_col=0)
-spread = pd.DataFrame({'spread': (pers.max(axis=1) - pers.min(axis=1))})
-good_data = good_data.join(spread)
-
-# spacings between peaks for each event
-s = pd.read_csv("Data_Files/spacings.csv")
-s['dt'] = s['dt'].apply(ast.literal_eval)
-
-fullper = np.zeros(len(good_data)) # initialize vector containing full/half classification
-diff = np.zeros(len(good_data)) # initialize vector containing difference bw expected & observed
-
-for j in range(len(fullper)):
-    num_pks = len(s.dt[j])
-    hilt_uncertainty = 0.02 # time resolution of instrument
-    err = np.sqrt(good_data.spread[j]**2 + hilt_uncertainty**2) # propagate error
-
-    full_diff = abs(s.dt[j] - good_data.tb[j])
-    half_diff = abs(s.dt[j] - good_data.tb[j]/2)
-
-    # are any of the spacings within allowable sigma? t/f (bool)
-    full_yn = any([x <= err for x in full_diff])
-    half_yn = any([x <= err for x in half_diff])
-
-
-    # determine if half, full, or no match
-    if full_yn & half_yn:
-        # Both conditions are true, so figure out which is closer
-        if min(full_diff) < min(half_diff):
-            fullper[j] = 1
-            tb = good_data.tb[j]
-            zo = 10
-            diff[j] = min(full_diff)
-        else:
-            fullper[j] = 2
-            tb = good_data.tb[j]/2
-            zo = 10
-            diff[j] = min(half_diff)
-    elif full_yn:
-        fullper[j] = 1
-        tb = good_data.tb[j]
-        zo = 10
-        diff[j] = min(full_diff)
-    elif half_yn:
-        fullper[j] = 2
-        tb = good_data.tb[j]/2
-        zo = 10
-        diff[j] = min(half_diff)
-    else:
-        zo = 5
-        if min(full_diff) < min(half_diff):
-            tb = good_data.tb[j]
-            diff[j] = min(full_diff)
-            fullper[j] = 0
-        else:
-            tb = good_data.tb[j]/2
-            diff[j] = min(half_diff)
-            fullper[j] = 0
-
-            
-# read in data
-ref = pd.read_csv("Data_Files/microburst_catalog_00.txt")
-
-# limit reference data to time surveyed by my search script
-time_needed = pd.to_datetime(ref['dateTime'])
-idx = np.where((time_needed >= datetime(2000, 1, 1)) & (time_needed <= datetime(2003, 12, 31)))[0]
-ref = ref.iloc[idx,:]
-
-# Create the plot
-fig, ax = plt.subplots(figsize=(10,10), subplot_kw={'projection': 'polar'})
-# Reference microburst data
-
-ax.scatter(0,0,s=4500,c='k', marker='o', zorder=100)
-ax.scatter(0,10, s=100, c='plum', marker='o', alpha=0.8, label='reference', edgecolor='indigo')
-# ax.add_patch(Circle((0,0), 1, color='k', zorder=10))
-ax.scatter(ref.MLT*np.pi/12, ref.L, s=100, c='plum', marker='o', edgecolor='indigo',
-           alpha=0.005, zorder=0)
-# Plot my events
-
-ax.scatter(good_data.MLT[fullper==1]*np.pi/12, good_data.L[fullper==1], s=100, c='dodgerblue', 
-           marker='o', label='full matches', zorder=100, edgecolor='navy')
-ax.scatter(good_data.MLT[fullper==2]*np.pi/12, good_data.L[fullper==2], s=100, c='limegreen',
-           marker='^', label='half matches', zorder=50, edgecolor='darkgreen')
-ax.scatter(good_data.MLT[fullper==0]*np.pi/12, good_data.L[fullper==0], s=100, c='firebrick', 
-           marker='x', label='no match', zorder=10)
-
-# Random formatting stuff
-ax.set_rmax(8)
-ax.set_rticks(np.arange(0,9), labels=['0', '1', '2', '3', '4', '5', '6', '7', '8'], 
-              size=20)  # L shell values
-ticklocs = np.pi*np.arange(0, 360, 90)/180
-ax.set_xticks(ticklocs.tolist())
-ax.set_xticklabels(['0', '6', '12', '18'], fontsize=20)#,color="white")
-
-ax.set_theta_zero_location("E")
-ax.grid(True)
-ax.legend(fontsize=16, loc='upper right')
-ax.set_thetagrids(np.linspace(0,360,9))
-# labels (weird for polar plots lol)
-plt.text(np.pi/3, 1, 'L-shell', rotation=30, size=20)
-plt.text(0, 9, 'MLT', color="black", size=20)
-
-plt.savefig('Figures/mlt_l.png')
-
-'''
-Period vs. L-shell (Figure 3)
-'''
-
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-import matplotlib.dates as dates
-from matplotlib.legend_handler import HandlerTuple
-import ast
-import matplotlib.colors as mcolors
-
-plt.rcParams["font.family"] = "Arial"
-
-def plot_specific_shape(ax, k, fullper, norm, cmap, diff, pl1):
+def plot_specific_shape(ax, k):
     # Function that plots bounce period vs. L shell for a specific shape
     # Author: Max Feinland
-    # Date created: sometime in July 2024
-    # Last modified: 11/15/2024
     
-    # Inputs: axes object (which subplot to plot on), iterator variable
+    # Inputs: axes object (which subplot to plot on), iterator variable 
     
     # Outputs: none
     
@@ -238,20 +100,19 @@ def plot_specific_shape(ax, k, fullper, norm, cmap, diff, pl1):
     current_letter = txt["letter"][k]
     
     # find indices containing allowable shapes
-    indices = np.where(good_data.shapes==current_shape)[0]
+    indices = np.where(data.shapes==current_shape)[0]
     
     for j in indices:
-        num_pks = len(s.dt[j])
+        num_pks = len(dt[j])
         hilt_uncertainty = 0.02 # time resolution of instrument
-        err = np.sqrt(good_data.spread[j]**2 + hilt_uncertainty**2) # propagate error
+        err = np.sqrt(spread[j]**2 + hilt_uncertainty**2) # propagate error
 
-        full_diff = abs(s.dt[j] - good_data.tb[j])
-        half_diff = abs(s.dt[j] - good_data.tb[j]/2)
+        full_diff = abs(dt[j] - data.tb[j])
+        half_diff = abs(dt[j] - data.tb[j]/2)
         
         # are any of the spacings within allowable sigma? t/f (bool)
         full_yn = any([x <= err for x in full_diff])
         half_yn = any([x <= err for x in half_diff])
-        
         
         # determine if half, full, or no match
         if full_yn & half_yn:
@@ -259,43 +120,37 @@ def plot_specific_shape(ax, k, fullper, norm, cmap, diff, pl1):
             if min(full_diff) < min(half_diff):
                 fullper[j] = 1
                 edgecol = full_color
-                tb = good_data.tb[j]
+                tb = data.tb[j]
                 zo = 10
-                diff[j] = min(full_diff)
             else:
                 fullper[j] = 2
                 edgecol = half_color
-                tb = good_data.tb[j]/2
+                tb = data.tb[j]/2
                 zo = 10
-                diff[j] = min(half_diff)
         elif full_yn:
             fullper[j] = 1
             edgecol = full_color
-            tb = good_data.tb[j]
+            tb = data.tb[j]
             zo = 10
-            diff[j] = min(full_diff)
         elif half_yn:
             fullper[j] = 2
             edgecol = half_color
-            tb = good_data.tb[j]/2
+            tb = data.tb[j]/2
             zo = 10
-            diff[j] = min(half_diff)
         else:
             fullper[j] = 0
             edgecol = else_color
             zo = 5
             if min(full_diff) < min(half_diff):
-                tb = good_data.tb[j]
-                diff[j] = min(full_diff)
+                tb = data.tb[j]
             else:
-                tb = good_data.tb[j]/2
-                diff[j] = min(half_diff)
+                tb = data.tb[j]/2
 
         # plotting
-        handl = ax.scatter(good_data.L[j]*np.ones(len(s.dt[j])), s.dt[j], marker='o', s=100, 
+        handl = ax.scatter(data.L[j]*np.ones(len(dt[j])), dt[j], marker='o', s=100, 
                    c=edgecol, alpha = 0.8, zorder=zo, edgecolor='k')
 
-        ax.errorbar(good_data.L[j], tb, yerr=err, fmt='s', 
+        ax.errorbar(data.L[j], tb, yerr=err, fmt='s', 
                  markerfacecolor='none', capsize=2.5, markeredgecolor=edgecol,
                  zorder=(zo+5), markersize=10, color='black', markeredgewidth=2, alpha=0.8)
     
@@ -318,29 +173,15 @@ def plot_specific_shape(ax, k, fullper, norm, cmap, diff, pl1):
     ax.yaxis.set_tick_params(labelsize=15)
     return handl
 
-# Import data
-data = pd.read_csv("Data_Files/all_events_v3.csv", index_col=0)
-good_data = data[data.final_eye<2] # restrict to good events
-good_data = good_data.reset_index(drop=True) # reset index
+all_data = pd.read_csv("Data_Files/all_events_v3.csv", index_col=0)
 
 # spread in model predictions
-pers = pd.read_csv("Data_Files/model_pers_2.csv",index_col=0)
-spread = pd.DataFrame({'spread': (pers.max(axis=1) - pers.min(axis=1))})
-good_data = good_data.join(spread)
+pers = data.loc[:, ['T05', 'OP', 'SL', 'T89', 'OM']] # all models ran for each event
+spread = (pers.max(axis=1) - pers.min(axis=1)) # spread in model predictions for each event
 
 # spacings between peaks for each event
-s = pd.read_csv("Data_Files/spacings.csv")
-s['dt'] = s['dt'].apply(ast.literal_eval)
-newper = [np.min(x) for x in s.dt] # data.per is min per, use this instead
-
-# portion of particles in loss cone
-pll = pd.read_csv("Data_Files/pll.csv", index_col=0)
-pl1 = pll.portion_losscone_1
-pl2 = pll.portion_losscone_2
-
-# Shared color normalization and colormap
-norm = mcolors.Normalize(vmin=0, vmax=1)
-cmap = plt.cm.viridis  
+dt = [ast.literal_eval(x) for x in data.dt]
+newper = [np.min(x) for x in dt] 
 
 # Making figures
 fig = plt.figure(layout='constrained', figsize=(20,18))
@@ -350,8 +191,8 @@ subfigs = fig.subfigures(2, 1, wspace=0.07)
 ax1 = subfigs[0].subplots()
 
 # Calculate period ratios 
-good_ratio = np.divide(newper, good_data.tb)
-bad_ratio = np.divide(data.per[data.final_eye>1.5], data.tb[data.final_eye>1.5])
+good_ratio = np.divide(newper, data.tb)
+bad_ratio = np.divide(all_data.per[all_data.final_eye>1.5], all_data.tb[all_data.final_eye>1.5])
 
 ax1.hist(good_ratio, bins=15, range=(-0.05,1.45), color='royalblue', histtype='step', linewidth=4,
         linestyle='-', zorder=10, label='good') # good histogram
@@ -380,18 +221,16 @@ full_color = 'dodgerblue'
 half_color = 'limegreen'
 else_color = 'rosybrown'
 
-fullper = np.zeros(len(good_data)) # initialize vector containing full/half classification
-diff = np.zeros(len(good_data)) # initialize vector containing difference bw expected & observed
-norm = mcolors.Normalize(vmin=0, vmax=1)
+fullper = np.zeros(len(data))
+
 # iterate through axes object and plot each shape type
 for j, a in enumerate(ax_flat):
-    handle = plot_specific_shape(a, j, fullper, norm, cmap, diff, pll.portion_losscone_1)
-
+    handle = plot_specific_shape(a, j)
 
 p = ax2[0,1]
-p1, = p.plot(0, 0, 'o', color=full_color, alpha=0.8, markersize=10)
-p2, = p.plot(0, 0, 'o', color=half_color, alpha=0.8, markersize=10)
-p3, = p.plot(0, 0, 'o', color=else_color, alpha=0.8, markersize=10)
+p1, = p.plot(0, 0, 'o', color=full_color, alpha=0.8, markersize=10, markeredgecolor='k')
+p2, = p.plot(0, 0, 'o', color=half_color, alpha=0.8, markersize=10, markeredgecolor='k')
+p3, = p.plot(0, 0, 'o', color=else_color, alpha=0.8, markersize=10, markeredgecolor='k')
 
 f = p.errorbar(0, 0, yerr=0.2, fmt='s', markeredgecolor=full_color, markerfacecolor='none',
                color='black', markersize=10, capsize=4, markeredgewidth=2)
@@ -403,13 +242,69 @@ l = p.legend([(p1, p2, p3), f, h, x], # i made the legend look nice
          ['Observed spacing', 'T05 model', 'T05 model (half)',  'T05 model (no match)'], 
          handler_map={tuple: HandlerTuple(ndivide=None)}, fontsize=16, loc='upper right')
 
-plt.savefig('Figures/tb.png')
+# plt.savefig('Figures/tb.png')
+
+'''
+Polar plot of MLT, L-shell
+'''
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import ast
+from datetime import datetime
+
+
+# read in data
+ref = pd.read_csv("Data_Files/microburst_catalog_00.txt")
+
+# limit reference data to time surveyed by my search script
+time_needed = pd.to_datetime(ref['dateTime'])
+idx = np.where((time_needed >= datetime(2000, 1, 1)) & (time_needed <= datetime(2003, 12, 31)))[0]
+ref = ref.iloc[idx,:]
+
+# Create the plot
+fig, ax = plt.subplots(figsize=(10,10), subplot_kw={'projection': 'polar'})
+ax.scatter(0, 0, s=4500, c='k', marker='o', zorder=100) # This is the Earth b/c ax.add_patch doesn't work well with polar coords
+ax.scatter(0,10, s=100, c='plum', marker='o', alpha=0.8, label='reference', edgecolor='indigo') # this is for the legend
+ax.scatter(ref.MLT*np.pi/12, ref.L, s=100, c='plum', marker='o', edgecolor='indigo',
+           alpha=0.005, zorder=0) # plot reference events
+# Plot my events
+ax.scatter(data.MLT[fullper==1]*np.pi/12, data.L[fullper==1], s=100, c='dodgerblue', 
+           marker='o', label='full matches', zorder=100, edgecolor='navy')
+ax.scatter(data.MLT[fullper==2]*np.pi/12, data.L[fullper==2], s=100, c='limegreen',
+           marker='^', label='half matches', zorder=50, edgecolor='darkgreen')
+ax.scatter(data.MLT[fullper==0]*np.pi/12, data.L[fullper==0], s=100, c='firebrick', 
+           marker='x', label='no match', zorder=10)
+
+# Formatting stuff
+ax.set_rmax(8)
+ax.set_rticks(np.arange(0,9), labels=['0', '1', '2', '3', '4', '5', '6', '7', '8'], 
+              size=20)  # L shell values
+ticklocs = np.pi*np.arange(0, 360, 90)/180
+ax.set_xticks(ticklocs.tolist())
+ax.set_xticklabels(['0', '6', '12', '18'], fontsize=20)#,color="white")
+ax.set_theta_zero_location("E")
+ax.grid(True)
+ax.legend(fontsize=16, loc='upper right')
+ax.set_thetagrids(np.linspace(0,360,9))
+plt.text(np.pi/3, 1, 'L-shell', rotation=30, size=20)
+_ = plt.text(0, 9, 'MLT', color="black", size=20)
+
+# plt.savefig('Figures/mlt_l.png')
+
+'''
+Figure 4: Geographic locations
+'''
+
+import geopandas as gpd
+
 
 def isleap(year):
     return year % 4 == 0
 
 def dayarrayfun():
-    """Generate a DataFrame of day and year values."""
+    """Generate a dataframe of day/year pairs matching w/ SAMPEX ephemeris data"""
     start_year = 1996
     start_day = 160
     end_year = 2012
@@ -440,17 +335,6 @@ def dayarrayfun():
     dates = pd.to_datetime(y, format='%Y%j')
     days_df = pd.DataFrame({'dates': dates, 'y_col': years_array, 'd_col': days_array})
     return days_df
-
-'''Create magnetic field background'''
-import pandas as pd
-import numpy as np
-import sampex
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-from datetime import datetime, timedelta
-
-plt.rcParams["font.family"] = "Arial" # because I don't like the default Python font
 
 # Load attitude data for time
 def load_att(t):
@@ -491,21 +375,17 @@ def load_att(t):
 
 t_i = '2001-1-1' # date for which we'll use the whole 27-day ephemeris file
 
-yes_load = True
-
-if yes_load:
+if 'att' not in globals():
     att = load_att(t_i)
 
-# PLOT THAT THANG
 fig = plt.figure(layout='constrained', figsize=(14,14.2))
 
-## SUBFIGURE 1: Locations
+## Subfigure 1: Locations
 subfigs = fig.subfigures(2, 1, wspace=0.07)
 ax = subfigs[0].subplots()
 
 shapefile = 'Data_Files/ne_110m_admin_0_countries_lakes.shp'
 world = gpd.read_file(shapefile)
-
 b_cm = plt.cm.Blues
 
 # Plot magnetic field intensity
@@ -537,29 +417,19 @@ l_lon = -197
 for i in range(len(l_labels['lat'])):
     ax.text(l_lon, l_labels['lat'][i], l_labels['name'][i], fontsize=14, zorder=50)
 
-
-# Import event data
-data = pd.read_csv("Data_Files/all_events_v3.csv", index_col=0)
-good_data = data[data.final_eye<2] # restrict to good events
-good_data = good_data.reset_index(drop=True) # reset index
-
-pll = pd.read_csv('Data_Files/pll.csv', index_col=0) # portion of particles inside loss cone
-pl1 = pll.portion_losscone_1
     
 plot_dict = {'shape': ['decr', 'half', 'crown', 'other'],
             'marker': ['v', 's', '*', 'o'],
             'size': [100, 100, 250, 100]}
-gds = good_data.shapes
+gds = data.shapes
 
 h1, h2, h3, h4 = [], [], [], []
 handle_list = [h1, h2, h3, h4]
-
 cm = plt.cm.plasma
-
-for j in range(4):
+for j in range(4): # Plot 
     idx = gds==plot_dict['shape'][j]
-    handle_list[j] = ax.scatter(good_data.lon[idx], good_data.lat[idx], marker=plot_dict['marker'][j],
-                                s=plot_dict['size'][j], c=pl1[idx], zorder=50, edgecolor='maroon',
+    handle_list[j] = ax.scatter(data.lon[idx], data.lat[idx], marker=plot_dict['marker'][j],
+                                s=plot_dict['size'][j], c=data.pl1[idx], zorder=50, edgecolor='maroon',
                                 label=plot_dict['shape'][j], cmap = cm, vmin=0, vmax=1)
     
 cbar = fig.colorbar(handle_list[0], ax=ax, orientation='vertical', pad=0.005)
@@ -571,8 +441,7 @@ ax.tick_params(axis='both', labelsize=16)
 ax.set_xticks(np.arange(-180,181,45))
 
 
-## SUBFIGURE 2: HISTOGRAMS
-
+## Subfigure 2: Portion inside losscone histograms
 subfigsnest = subfigs[1].subfigures(1,3, width_ratios=[0.02, 1, 0.08])
 ax2 = subfigsnest[1].subplots(2, 2, sharex=True, sharey=True)
 
@@ -582,9 +451,9 @@ def plot_specific_shape_hist(ax, k, pl1):
     current_letter = txt["letter"][k]
     
     # find indices containing allowable shapes
-    indices = np.where(good_data.shapes==current_shape)[0]
+    indices = np.where(data.shapes==current_shape)[0]
     
-    handl = ax.hist(pl1[indices], color='turquoise', bins=10, range=(0,1))
+    handl = ax.hist(data.pl1[indices], color='turquoise', bins=10, range=(0,1))
     
     if current_shape == 'decr':
         shape_label = 'decreasing'
@@ -607,7 +476,7 @@ txt = {"shapes": ["decr", "half", "crown", "other"],
 
 ax_flat = ax2.flatten()
 for j, a in enumerate(ax_flat):
-    handle = plot_specific_shape_hist(a, j, pl1)
+    handle = plot_specific_shape_hist(a, j, data.pl1)
     a.tick_params(axis='both', labelsize=16)
 
-plt.savefig('Figures/losscone.png')
+# plt.savefig('Figures/losscone.png')
