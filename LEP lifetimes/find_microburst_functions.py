@@ -1,6 +1,6 @@
-## O'Brien without grouping scheme used to locate bouncing packets
+## Find microbursts using O'Brien et al. (2003) condition
 # Author: Max Feinland for Blum Research Group, LASP
-# Inputs: data
+# Inputs: HILT data
 # Outputs: timestamp of each microburst
 
 # Housekeeping
@@ -119,16 +119,19 @@ def load_att(day, current_row):
     if current_row < 49: # if before the year 2000, file will be zipped
         att_filename = att_filename + '.zip'
 
-    # take out year, day of year, seconds, latitude, longitude, altitude, L-shell, # magnetic field magnitude (B-mag),
-    # magnetic local time (MLT), losscone 1, losscone 2, pitch, SAA flag, attitude flag
-    cols = np.array([0, 1, 2, 7, 8, 9, 20, 21, 22, 34, 35, 58, 68, 71])
+    # take out year, day of year, seconds, latitude, longitude, altitude, L-shell, local magnetic field magnitude,
+    # magnetic local time (MLT), losscone 1, losscone 2, pitch, equatorial B field magnitude, SAA flag, attitude flag
+    cols = np.array([0, 1, 2, 7, 8, 9, 20, 21, 22, 34, 35, 45, 58, 68, 71])
 
     # Read in file
     try:
         att = pd.read_csv(att_filename, sep=' ', skiprows=60, on_bad_lines='skip', header=None, usecols=cols)
     except FileNotFoundError:
-        att = pd.read_csv('/Users/maxim/sampex-data/Attitude/PSSet_6sec_2008340_2008366.txt',
-        sep=' ', skiprows=60, on_bad_lines='skip', header=None, usecols=cols)
+        a = sampex.Attitude(day) # download the file
+        att = pd.read_csv(att_filename, sep=' ', skiprows=60, on_bad_lines='skip', header=None, usecols=cols)
+        # Uncomment these two lines if you get this far in the data and it throws you an error
+        # att = pd.read_csv('/Users/maxim/sampex-data/Attitude/PSSet_6sec_2008340_2008366.txt',
+                          # sep=' ', skiprows=60, on_bad_lines='skip', header=None, usecols=cols)
 
     # These lines modified from Mike Shumko's sampex package -- turn year, doy, s columns into Timestamp and set as index
     year_doy = [f"{year}-{doy}" for year, doy in att.iloc[:,[0, 1]].values]
@@ -139,7 +142,7 @@ def load_att(day, current_row):
     att.drop([0, 1, 2], axis=1, inplace=True)
     
     # Rename columns
-    colnames = ['lon', 'lat', 'alt', 'L', 'B', 'MLT', 'losscone1', 'losscone2', 'SAA', 'pitch',  'att']
+    colnames = ['lon', 'lat', 'alt', 'L', 'B', 'MLT', 'losscone1', 'losscone2', 'Beq', 'SAA', 'pitch', 'att']
     att.columns = colnames
     
     # change longitude to be -180 to 180 (rather than 0 to 360) -- also adapted from sampex package
