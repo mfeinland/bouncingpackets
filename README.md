@@ -7,11 +7,14 @@ Contains all of the relevant code I (Max Feinland) wrote for Blum Research Group
 - Has MATLAB search script and materials to replicate plots from that paper
 
 ### variable shapes
-- Code for paper *Variable shapes observed in electron bouncing microburst packets*, submitted to GRL in August 2024
-- Has Python search script and materials to replicate plots from that paper (as of Dec 2024 revision)
-  
+- Code for paper *Variable shapes observed in electron bouncing microburst packets*, published January 2025 in GRL
+- Has Python search script and materials to replicate plots from that paper
+
+### LEP lifetimes
+- Code for paper *Lightning-induced precipitation as a proxy for inner belt MeV electron lifetimes*, to be submitted to JGR soonish
+
 ### time evolution
 - Code for as-yet unpublished manuscript investigating the evolution of bouncing packet peaks
 
-### work_in_progress
-- Currently making more extensive inner belt microburst catalog (using O'Brien > 5 rather than > 10).
+### misc
+- Everything else
