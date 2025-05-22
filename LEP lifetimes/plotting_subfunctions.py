@@ -446,3 +446,38 @@ def gaus_overlay_plot(props_df, hilt_df, ax, time_range, good_peaks):
     ax.legend(fontsize=12) 
     ax.set_xlim(time_array[0], time_array[-1])
     return 
+
+def get_slotfill_times(param, threshold, bps, random_times):
+    # param: dst or lpp
+    # threshold: value that the parameter needs to dip below in order for it to be considered a slot-filling event
+    # random_times: should you compare the slot-filling times to an equal number of random epochs?
+
+    # Set some constants
+    state4_start = datetime(1996, 8, 16)
+    state4_end = datetime(2012, 11, 13)
+    
+    unique_slotfill_times = []
+    slot_fill_idx = np.where(param <= threshold)[0] 
+    slot_fill = param.index[slot_fill_idx]
+    dt = slot_fill.diff()
+    changes = np.where(dt > timedelta(hours=1))
+    unique_slotfill_times = slot_fill[changes]
+
+    if random_times:
+        random_t = [random.random() * (state4_end - state4_start) + state4_start for _ in range(len(unique_slotfill_times))]
+        final_slotx = []
+        final_randomx = []
+        final_L = []
+        
+        for i in range(len(unique_slotfill_times)):
+            slotx = (bps.index - unique_slotfill_times[i])/timedelta(days=1)
+            randomx = (bps.index - random_t[i])/timedelta(days=1)
+            L = bps['L']
+            
+            final_slotx.extend(slotx)
+            final_randomx.extend(randomx)
+            final_L.extend(L.iloc)
+    
+        return final_slotx, final_randomx, final_L
+    else:
+        return unique_slotfill_times
