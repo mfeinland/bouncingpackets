@@ -639,7 +639,7 @@ for i, ax in enumerate(ax.flat):
         except: # sometimes there may not be a SFE before the timestamp, so you can just skip it
             pass
 
-    slot_to_slot = np.diff(slotfill_times)/timedelta(days=1)
+    slot_to_slot = slotfill_times.diff()/timedelta(days=1)
     
     thebins = np.arange(0, 200, 5)
     thebins = np.concatenate((thebins, [2000])) # add overflow bin
