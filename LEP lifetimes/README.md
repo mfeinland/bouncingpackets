@@ -7,8 +7,8 @@
 
 
 ## Directory
-- `find_bursts.py` searches through all of the SAMPEX/HILT State 4 data and applies a modified [O'Brien (2003)](https://doi.org/10.1029/2002JA009784) algorithm to detect bursts. There are then some quality checks that it applies. The final result is output to a `.csv` file containing the timestamps for all microbursts and ephemeris data. This is detailed in the `Data_Files` subfolder.
-- `find_bouncing_packets.py` then restricts that catalog to *L* < 2.5 and plots each burst event, prompting the user to categorize into a bouncing packet or other burst event. The events identified as bouncing packets are saved to `inner_belt_bursts.csv`.
+- `find_bursts.py` searches through all of the SAMPEX/HILT State 4 data and applies a modified [O'Brien (2003)](https://doi.org/10.1029/2002JA009784) algorithm to detect bursts. There are then some quality checks that it applies. The final result is output to `inner_belt_bursts.csv`, containing the timestamps for all microbursts and ephemeris data. This is detailed in the `Data_Files` subfolder.
+- `find_bouncing_packets.py` then restricts that catalog to *L* < 2.5 and plots each burst event, prompting the user to categorize into a bouncing packet or other burst event. The events identified as bouncing packets are saved to `bouncing_packets.csv`.
 - `make_figures.py` has the code to replicate all the figures from the manuscript.
 
 `Data_Files` has the following files:
