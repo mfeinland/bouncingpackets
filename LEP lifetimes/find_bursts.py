@@ -9,12 +9,12 @@ import time
 
 from find_microburst_functions import *
 
-print("Welcome to the inner_belt_microbursts search script.", flush=True)
+print("Welcome to the find_bursts search script.", flush=True)
 print("Coded by Max Feinland for Blum Research Group, 2023-2025.", flush=True)
 
 # Initializing these variables
 debug = False
-filename = "Data_Files/inner_belt_microbursts_test.csv" # filename to save to
+filename = "Data_Files/inner_belt_bursts.csv" # filename to save to
 
 list_of_days = pd.date_range(start='8/16/1996', end='11/13/2012')
 
@@ -100,7 +100,7 @@ for j, day in enumerate(list_of_days):
             if proceed3:
                 interp_cols = ['lon', 'lat', 'alt', 'L', 'B', 'MLT', 'losscone1', 'losscone2', 'Beq', 'pitch']
                 # Restrict dataframe to these times, so it only contains the necessary data.
-                # Interpolate linearly between these values, just need the two closest times for each microburst.
+                # Interpolate linearly between these values, just need the two closest times for each burst.
                 att_data = a.iloc[a_idx,:]
         
                 saa_att_df = att_data[['SAA', 'att']][::2] # Every second index, pull out the SAA flag and attitude quality flag.
@@ -127,9 +127,9 @@ for j, day in enumerate(list_of_days):
                 output[['SAA', 'att']] = output[['SAA', 'att']].replace(-1, np.nan) # Put nans back
         
                 if not debug: # if saving to a file
-                    if len(output) > 0: # if any microbursts detected:
+                    if len(output) > 0: # if any bursts detected:
                         now = datetime.now().strftime("%B %d, %Y %H:%M:%S") # current timestamp
-                        print(output) # Print the microbursts and their data
+                        print(output) # Print the bursts and their data
                         
                         # save to file
                         if op.isfile('./' + filename):
@@ -141,7 +141,7 @@ for j, day in enumerate(list_of_days):
                             output.to_csv(filename, sep=',', encoding='utf-8')
                             print("Saved to file at " + now + ".")
                     else:
-                        print("No inner belt microbursts found on this day.")
+                        print("No inner belt bursts found on this day.")
 
     time.sleep(5) # to prevent overheating
 
