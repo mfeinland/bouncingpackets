@@ -1,7 +1,7 @@
-## Find microbursts using O'Brien et al. (2003) condition
+## Find bursts using O'Brien et al. (2003) condition
 # Author: Max Feinland for Blum Research Group, LASP
 # Inputs: HILT data
-# Outputs: timestamp of each microburst
+# Outputs: timestamp of each burst
 
 # Housekeeping
 import pandas as pd
@@ -96,7 +96,7 @@ def obrien(data):
 
     qc = pd.DataFrame(qc) # convert dictionary to dataframe
     passed_qc = np.where((qc['notcoarse'] == 1) & (qc['continuous'] == 1))[0] # Find spots where quality check was passed
-    final_idx = final_idx[passed_qc] # Restrict indices of microbursts and counts to times when quality check was passed
+    final_idx = final_idx[passed_qc] # Restrict indices of bursts and counts to times when quality check was passed
     counts = counts[passed_qc]
     return final_idx, counts
 
