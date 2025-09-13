@@ -1,6 +1,4 @@
-
-# LEP Lifetimes Paper Summary
-### Materials relevant to "Lightning-induced precipitation as a proxy for inner belt MeV electron decay times", submitted 2025 in *JGR Space Physics*
+# Materials for "Lightning-induced precipitation as a proxy for inner belt MeV electron decay times", submitted 2025 in *JGR Space Physics*
 
 **Author:** Max Feinland for Blum Research Group, LASP \
 **Contact:** max.feinland@lasp.colorado.edu or maxfeinland@gmail.com \
